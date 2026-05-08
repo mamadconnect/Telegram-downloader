@@ -1,0 +1,69 @@
+name: 03- 🧹 Clear contents of posts/downloads
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '📁 Which directory to clean?'
+        required: true
+        type: choice
+        options:
+          - posts
+          - downloads
+          - both
+
+jobs:
+  clear-directories:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📂 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🧹 Clean selected directory contents (force commit)
+        run: |
+          TARGET="${{ github.event.inputs.target }}"
+
+          clean_dir() {
+            DIR=$1
+            echo "🔍 Checking $DIR ..."
+            # Remove the entire directory to ensure all content is deleted
+            if [ -d "$DIR" ]; then
+              echo "🗑️  Removing $DIR entirely..."
+              rm -rf "$DIR"
+            fi
+            # Recreate the empty directory with a .gitkeep
+            mkdir -p "$DIR"
+            touch "$DIR/.gitkeep"
+            echo "✅ $DIR reset to empty (only .gitkeep)."
+          }
+
+          if [ "$TARGET" = "posts" ] || [ "$TARGET" = "both" ]; then
+            clean_dir "posts"
+          fi
+
+          if [ "$TARGET" = "downloads" ] || [ "$TARGET" = "both" ]; then
+            clean_dir "downloads"
+          fi
+
+      - name: 📤 Commit & push changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          # Stage everything (including deletions and new .gitkeep files)
+          git add -A
+
+          # If nothing changed, we still create an empty commit to record the action (optional)
+          if git diff --cached --quiet; then
+            echo "ℹ️  No changes to commit. Creating empty commit for record."
+            git commit --allow-empty -m "🧹 Clean ${{ github.event.inputs.target }} (already empty) [skip ci]"
+          else
+            git commit -m "🧹 Clean ${{ github.event.inputs.target }} contents [skip ci]"
+          fi
+
+          git push
