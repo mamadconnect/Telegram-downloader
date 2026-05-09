@@ -1,12 +1,4 @@
-# -----------------------------------------------------------------------------
-# GitHub Actions workflow to download the last N posts (default 10) from a public Telegram channel.
-# For each post, it extracts the message text, downloads any attached file,
-# extracts hyperlinks (from embed page), and saves the publication timestamp.
-# All data is organised under posts/<channel>/<post_id>/.
-# The channel README mimics Telegram chat bubbles with clear numbering.
-# -----------------------------------------------------------------------------
-
-name: 02- 📥 Channel Posts (Text + Files + Links + Date) – Telegram style (fixed)
+name: 02- 📥 Channel Posts (Robust – multi‑page + fallback API)
 
 on:
   workflow_dispatch:
@@ -56,86 +48,105 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y curl jq p7zip-full python3 wget
 
-      # --------------------------------------------------------------------
-      # Step 4 – Scrape channel page, extract post IDs AND their timestamps
-      # --------------------------------------------------------------------
-      - name: 🔍 Fetch last post IDs + timestamps
+      # --- Step 4 (new) – Multi‑page ID collection ---------------------------------
+      - name: 🔍 Collect all required post IDs (multi‑page)
         id: fetch-posts
         run: |
           CHANNEL="${{ github.event.inputs.channel }}"
           COUNT="${{ github.event.inputs.post_count }}"
           CHANNEL="${CHANNEL#@}"
-          echo "📡 Fetching posts from t.me/s/${CHANNEL}"
+          echo "📡 Channel: $CHANNEL  |  Target: $COUNT posts"
 
-          PAGE_HTML=$(curl -sL --max-time 30 \
-            -H "User-Agent: Mozilla/5.0" \
-            "https://t.me/s/${CHANNEL}" 2>/dev/null || echo "")
+          cat > /tmp/paginate.py << 'PYEOF'
+          import sys, re, urllib.request, urllib.error, time, json
 
-          if [ -z "$PAGE_HTML" ]; then
-            echo "❌ Failed to retrieve channel page"
-            exit 1
-          fi
+          channel = sys.argv[1]
+          needed = int(sys.argv[2])
+          base = f"https://t.me/s/{channel}"
+          headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"}
 
-          echo "$PAGE_HTML" > /tmp/page.html
-
-          cat > /tmp/extract_ids_and_dates.py << 'ENDOFPYTHON'
-          import sys, re
-
-          with open('/tmp/page.html', 'r', encoding='utf-8') as f:
-              page = f.read()
-
-          channel = sys.argv[1].lower()
-          count = int(sys.argv[2])
-
-          post_ids = []
-          post_dates = []
-
-          for m in re.finditer(r'data-post="([^/]+)/(\d+)"', page):
-              ch = m.group(1)
-              pid = m.group(2)
-              if ch.lower() == channel and pid.isdigit():
-                  post_ids.append(int(pid))
-                  rest = page[m.start():]
-                  time_match = re.search(r'<time[^>]*datetime="([^"]+)"', rest)
-                  if time_match:
-                      post_dates.append(time_match.group(1))
-                  else:
-                      post_dates.append("Unknown")
-
-          combined = sorted(zip(post_ids, post_dates), key=lambda x: x[0], reverse=True)
+          ids_dates = []   # (id, datetime)
           seen = set()
-          unique_combined = []
-          for pid, dt in combined:
-              if pid not in seen:
-                  seen.add(pid)
-                  unique_combined.append((pid, dt))
-          top = unique_combined[:count]
+          page_url = base
+          stop_after_empty = 3
+          empty_count = 0
 
-          ids_line = ' '.join(str(pid) for pid, dt in top)
-          dates_line = ' '.join(dt for pid, dt in top)
-          print(ids_line)
-          print(dates_line)
-          ENDOFPYTHON
+          while len(ids_dates) < needed:
+              req = urllib.request.Request(page_url, headers=headers)
+              try:
+                  with urllib.request.urlopen(req, timeout=25) as resp:
+                      page = resp.read().decode('utf-8')
+              except Exception as e:
+                  print(f"⚠️ Failed to fetch {page_url}: {e}", file=sys.stderr)
+                  if page_url == base:
+                      sys.exit(1)
+                  break
 
-          python3 /tmp/extract_ids_and_dates.py "$CHANNEL" "$COUNT" > /tmp/posts_data.txt
-          POST_IDS=$(head -1 /tmp/posts_data.txt)
-          POST_DATES=$(tail -1 /tmp/posts_data.txt)
+              # extract blocks
+              matches = re.findall(r'data-post="([^/]+)/(\d+)"', page)
+              if not matches:
+                  empty_count += 1
+                  if empty_count >= stop_after_empty:
+                      break
+              else:
+                  empty_count = 0
 
-          if [ -z "$POST_IDS" ]; then
-            echo "❌ No posts found"
+              page_ids = []
+              for ch, pid in matches:
+                  if ch.lower() == channel.lower() and pid.isdigit():
+                      pid_int = int(pid)
+                      if pid_int not in seen:
+                          seen.add(pid_int)
+                          # look for <time datetime="...">
+                          time_match = re.search(
+                              r'<time[^>]*datetime="([^"]+)"',
+                              page[page.index(f'data-post="{ch}/{pid}"'):]
+                          )
+                          dt = time_match.group(1) if time_match else "Unknown"
+                          page_ids.append((pid_int, dt))
+
+              # sort descending within this page
+              page_ids.sort(key=lambda x: x[0], reverse=True)
+              ids_dates.extend(page_ids)
+              ids_dates.sort(key=lambda x: x[0], reverse=True)
+              # keep best N
+              ids_dates = ids_dates[:needed]
+
+              if len(ids_dates) >= needed:
+                  break
+
+              # find 'before' parameter: oldest id on this page
+              oldest = min(page_ids, key=lambda x: x[0])[0] if page_ids else None
+              if oldest:
+                  page_url = f"{base}?before={oldest}"
+              else:
+                  break
+
+          # output
+          for pid, dt in ids_dates:
+              print(f"{pid}|{dt}")
+          PYEOF
+
+          python3 /tmp/paginate.py "$CHANNEL" "$COUNT" > /tmp/posts_ids.txt
+          if [ ! -s /tmp/posts_ids.txt ]; then
+            echo "❌ No posts found."
             exit 1
           fi
 
-          echo "✅ Post IDs: $POST_IDS"
-          echo "✅ Post dates: $POST_DATES"
+          POST_IDS=""
+          POST_DATES=""
+          while IFS='|' read -r pid dt; do
+            POST_IDS="$POST_IDS $pid"
+            POST_DATES="$POST_DATES $dt"
+          done < /tmp/posts_ids.txt
+
+          echo "✅ Found $(echo $POST_IDS | wc -w) posts"
           echo "post_ids=$POST_IDS" >> $GITHUB_OUTPUT
           echo "post_dates=$POST_DATES" >> $GITHUB_OUTPUT
           echo "channel=$CHANNEL" >> $GITHUB_OUTPUT
 
-      # --------------------------------------------------------------------
-      # Step 5 – For each post: extract text, links, download files, save timestamp
-      # --------------------------------------------------------------------
-      - name: ⬇️ Extract text, links, download files, save timestamp
+      # --- Step 5 (improved) – Extract text / links / files ------------------------
+      - name: ⬇️ Extract text, links, download files
         id: download-all
         run: |
           CHANNEL="${{ steps.fetch-posts.outputs.channel }}"
@@ -144,7 +155,8 @@ jobs:
           BACKUP_DIR="/tmp/tg_backup_$$"
           mkdir -p "$BACKUP_DIR/posts"
 
-          cat > /tmp/extract_text_and_links.py << 'ENDOFPYTHON'
+          # Helper: extract text & links from any HTML page
+          cat > /tmp/extract_text_links.py << 'PYEOF'
           import sys, re, html
           from html.parser import HTMLParser
 
@@ -172,228 +184,215 @@ jobs:
                       self.current_text += data
 
           page = sys.stdin.read()
+          text = ""
+          links = []
 
-          plain = ""
+          # try main message div
           div_match = re.search(r'<div\s+class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', page, re.DOTALL)
           if div_match:
-              inner_html = div_match.group(1)
-              clean = re.sub(r'<[^>]+>', ' ', inner_html)
-              clean = html.unescape(clean)
-              plain = clean.strip()
+              inner = div_match.group(1)
+              # remove tags for plain text
+              plain = html.unescape(re.sub(r'<[^>]+>', ' ', inner)).strip()
+              text = re.sub(r'\s+', ' ', plain)
               parser = LinkExtractor()
-              parser.feed('<div>' + inner_html + '</div>')
+              parser.feed('<div>' + inner + '</div>')
               links = parser.links
-          else:
-              meta_match = re.search(r'<meta\s+property="og:description"\s+content="([^"]+)"', page)
-              if meta_match:
-                  text = meta_match.group(1)
-                  if '...' in text:
-                      text = text.split('...', 1)[1]
-                  plain = text.strip()
-              links = []
 
+          # fallback: og:description
+          if not text:
+              meta = re.search(r'<meta\s+property="og:description"\s+content="([^"]+)"', page)
+              if meta:
+                  raw = meta.group(1)
+                  if '...' in raw:
+                      raw = raw.split('...', 1)[1]
+                  text = raw.strip()
+
+          # if still no links, grab any external URLs from page
           if not links:
               raw_urls = re.findall(r'(https?://[^\s<>"]+)', page)
               for u in raw_urls:
                   if 't.me/' not in u and 'cdn' not in u:
                       links.append((u, u))
 
-          print(plain)
+          print(text)
           for link_text, link_url in links:
+              # clean up
               link_text = re.sub(r'<[^>]+>', '', link_text).strip()
               if link_text and link_url:
                   print(f"{link_text}|{link_url}")
-          ENDOFPYTHON
+          PYEOF
 
-          cat > /tmp/extract_filename.py << 'ENDOFPYTHON'
-          import sys, urllib.parse
-          url = sys.argv[1]
-          clean_url = url.split('?')[0].split('#')[0]
-          name = urllib.parse.unquote(clean_url.split('/')[-1])
-          print(name)
-          ENDOFPYTHON
+          # Helper: resolve download URL from post link (updated regex, more patterns)
+          cat > /tmp/find_file_url.sh << 'BASH'
+          #!/bin/bash
+          POST_LINK="$1"
+          OUTPUT_FILE="$2"
 
+          # method 1: og meta tags from embed page
+          EMBED_URL="${POST_LINK/s\//\/}?embed=1"   # t.me/s/... -> t.me/s/?embed=1
+          PAGE=$(curl -sL --max-time 20 -H "User-Agent: Mozilla/5.0" "$EMBED_URL")
+          for meta in "og:image" "og:video" "og:video:url" "og:video:secure_url"; do
+            URL=$(echo "$PAGE" | grep -oP '(?<=<meta\s+property="'"$meta"'"\s+content=")[^"]+' | head -1)
+            if [ -n "$URL" ]; then
+              echo "$URL" > "$OUTPUT_FILE"
+              return 0
+            fi
+          done
+
+          # method 2: direct scrape post link for CDN urls
+          PAGE=$(curl -sL --max-time 20 -H "User-Agent: TelegramBot (like TwitterBot)" "$POST_LINK")
+          # various CDN patterns
+          CDN_URL=$(echo "$PAGE" | grep -oP 'https?://cdn[0-9a-zA-Z-]*\.(telesco\.pe|telegram\.org|telegram-cdn\.org|cdn-telegram\.org)/file/[^"'"'"'?\s]+' | head -1)
+          if [ -z "$CDN_URL" ]; then
+            # also try src tags
+            CDN_URL=$(echo "$PAGE" | grep -oP 'src="(https?://cdn[^"]+\.(mp4|mov|avi|mkv|pdf|zip|rar|7z|jpg|jpeg|png|gif|mp3|m4a|wav|flac|doc|docx|xls|xlsx|ppt|pptx|txt|apk|torrent))"' | head -1 | cut -d'"' -f2)
+          fi
+          if [ -n "$CDN_URL" ]; then
+            echo "$CDN_URL" > "$OUTPUT_FILE"
+            return 0
+          fi
+
+          # method 3: third-party APIs (only if nothing found)
+          ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$POST_LINK'))")
+          RESP=$(curl -s --max-time 30 -X POST -d "telegram_link=$ENCODED" -H "User-Agent: Mozilla/5.0" https://telegramdownloader.net/proxy.php)
+          URL=$(echo "$RESP" | jq -r '.data.data.link // empty' 2>/dev/null)
+          if [ -n "$URL" ] && [ "$URL" != "null" ]; then
+            FILE=$(echo "$RESP" | jq -r '.data.data.file_name // empty' 2>/dev/null)
+            echo "$URL" > "$OUTPUT_FILE"
+            [ -n "$FILE" ] && echo "$FILE" > "${OUTPUT_FILE}.name"
+            return 0
+          fi
+
+          RESP2=$(curl -s --max-time 30 -X POST -H "Content-Type: application/json" -d "{\"url\":\"$POST_LINK\"}" https://api.tgsave.com/download)
+          URL2=$(echo "$RESP2" | jq -r '.url // .link // .download_url // empty' 2>/dev/null)
+          if [ -n "$URL2" ] && [ "$URL2" != "null" ]; then
+            FILE2=$(echo "$RESP2" | jq -r '.filename // .file_name // .name // empty' 2>/dev/null)
+            echo "$URL2" > "$OUTPUT_FILE"
+            [ -n "$FILE2" ] && echo "$FILE2" > "${OUTPUT_FILE}.name"
+            return 0
+          fi
+
+          return 1
+          BASH
+          chmod +x /tmp/find_file_url.sh
+
+          # Main processing loop
           IFS=' ' read -ra IDS <<< "$POST_IDS"
           IFS=' ' read -ra DATES <<< "$POST_DATES"
 
-          extract_message_and_links() {
-            local POST_ID=$1
-            local POST_DIR=$2
-            local EMBED_URL="https://t.me/s/${CHANNEL}/${POST_ID}?embed=1"
-            echo "   📝 Extracting text & links from $EMBED_URL"
-            PAGE_HTML=$(curl -sL --max-time 20 \
-              -H "User-Agent: Mozilla/5.0" \
-              "$EMBED_URL" 2>/dev/null || echo "")
-            [ -z "$PAGE_HTML" ] && { echo "   ⚠️ Could not fetch embed page"; return 1; }
-
-            echo "$PAGE_HTML" | python3 /tmp/extract_text_and_links.py > "$POST_DIR/extracted.tmp"
-            MESSAGE_TEXT=$(head -1 "$POST_DIR/extracted.tmp")
-            if [ -n "$MESSAGE_TEXT" ]; then
-              echo "$MESSAGE_TEXT" > "$POST_DIR/message.txt"
-              echo "   ✅ Text extracted (${#MESSAGE_TEXT} chars)"
-            else
-              echo "   ℹ️ No text found."
-            fi
-
-            tail -n +2 "$POST_DIR/extracted.tmp" > "$POST_DIR/links.tmp"
-            if [ -s "$POST_DIR/links.tmp" ]; then
-              mv "$POST_DIR/links.tmp" "$POST_DIR/links.txt"
-              echo "   🔗 Extracted $(wc -l < "$POST_DIR/links.txt") link(s)"
-            else
-              rm -f "$POST_DIR/links.tmp"
-            fi
-            rm -f "$POST_DIR/extracted.tmp"
-          }
-
-          download_attached_file() {
-            local POST_ID=$1
-            local POST_DIR=$2
-            local POST_LINK="https://t.me/${CHANNEL}/${POST_ID}"
-            echo "   🔗 Searching for file: $POST_LINK"
-
-            RAW_URL=""
-            FILE_NAME=""
-
-            echo "   🌐 Method 1: telegramdownloader.net"
-            ENCODED_LINK=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$POST_LINK")
-            RESPONSE=$(curl -s --max-time 30 -X POST \
-              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-              -H "Content-Type: application/x-www-form-urlencoded" \
-              -d "telegram_link=${ENCODED_LINK}" \
-              https://telegramdownloader.net/proxy.php 2>/dev/null || echo "")
-            [ -n "$RESPONSE" ] && {
-              RAW_URL=$(echo "$RESPONSE" | jq -r '.data.data.link // empty' 2>/dev/null)
-              FILE_NAME=$(echo "$RESPONSE" | jq -r '.data.data.file_name // empty' 2>/dev/null)
-            }
-
-            if [ -z "$RAW_URL" ] || [ "$RAW_URL" = "null" ]; then
-              echo "   🌐 Method 2: tgsave.com"
-              RESPONSE2=$(curl -s --max-time 30 -X POST \
-                -H "User-Agent: Mozilla/5.0" \
-                -H "Content-Type: application/json" \
-                -d "{\"url\":\"$POST_LINK\"}" \
-                https://api.tgsave.com/download 2>/dev/null || echo "")
-              [ -n "$RESPONSE2" ] && {
-                RAW_URL=$(echo "$RESPONSE2" | jq -r '.url // .link // .download_url // empty' 2>/dev/null)
-                FILE_NAME=$(echo "$RESPONSE2" | jq -r '.filename // .file_name // .name // empty' 2>/dev/null)
-              }
-            fi
-
-            if [ -z "$RAW_URL" ] || [ "$RAW_URL" = "null" ]; then
-              echo "   🌐 Method 3: Direct scrape"
-              PAGE_HTML=$(curl -sL --max-time 20 \
-                -H "User-Agent: TelegramBot (like TwitterBot)" \
-                "$POST_LINK" 2>/dev/null || echo "")
-              RAW_URL=$(echo "$PAGE_HTML" | grep -oP 'https://cdn[0-9]*\.telesco\.pe/file/[^"]+' | head -1 || echo "")
-              if [ -z "$RAW_URL" ]; then
-                RAW_URL=$(echo "$PAGE_HTML" | grep -oP '(?<=content=")[^"]+\.(mp4|mov|avi|mkv|pdf|zip|rar|7z|jpg|jpeg|png|gif|mp3|m4a|wav|flac|doc|docx|xls|xlsx|ppt|pptx|txt|apk|torrent)[^"]*' | head -1 || echo "")
-              fi
-              [ -n "$RAW_URL" ] && FILE_NAME=$(basename "$RAW_URL" | sed 's/[?#].*//')
-            fi
-
-            if [ -z "$RAW_URL" ] || [ "$RAW_URL" = "null" ]; then
-              echo "   ℹ️ No downloadable file found."
-              return 0
-            fi
-
-            echo "$RAW_URL" > "$POST_DIR/download_url.txt"
-
-            if [ -z "$FILE_NAME" ] || [ "$FILE_NAME" = "null" ]; then
-              FILE_NAME=$(python3 /tmp/extract_filename.py "$RAW_URL")
-            fi
-
-            SAFE_NAME=$(echo "$FILE_NAME" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null | sed 's/ /-/g' | sed 's/[^a-zA-Z0-9._-]/_/g' | tr -s '-' | sed 's/^[._-]*//')
-            [ -z "$SAFE_NAME" ] && SAFE_NAME="file_${POST_ID}"
-
-            MAX_LEN=200
-            if [ ${#SAFE_NAME} -gt $MAX_LEN ]; then
-                BASE="${SAFE_NAME%.*}"
-                EXT="${SAFE_NAME##*.}"
-                if [ "$EXT" = "$SAFE_NAME" ]; then
-                    SAFE_NAME="${SAFE_NAME:0:$MAX_LEN}"
-                else
-                    SAFE_NAME="${BASE:0:$(($MAX_LEN - ${#EXT} - 1))}.${EXT}"
-                fi
-            fi
-
-            echo "   ⬇️ Downloading $SAFE_NAME ..."
-            DOWNLOADED=false
-
-            if curl -L --progress-bar --max-time 7200 --retry 3 --retry-delay 10 \
-              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-              -o "$POST_DIR/$SAFE_NAME" "$RAW_URL"; then
-              DOWNLOADED=true
-            else
-              echo "   ⚠️ Attempt 1 failed, trying HTTP/1.1..."
-              rm -f "$POST_DIR/$SAFE_NAME"
-              if curl -L --progress-bar --max-time 7200 --retry 3 --retry-delay 10 --http1.1 \
-                -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-                -o "$POST_DIR/$SAFE_NAME" "$RAW_URL"; then
-                DOWNLOADED=true
-              else
-                echo "   ⚠️ Attempt 2 failed, trying wget..."
-                rm -f "$POST_DIR/$SAFE_NAME"
-                if wget -q --show-progress --timeout=7200 --tries=3 \
-                  --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-                  -O "$POST_DIR/$SAFE_NAME" "$RAW_URL"; then
-                  DOWNLOADED=true
-                fi
-              fi
-            fi
-
-            if [ "$DOWNLOADED" = true ] && [ -f "$POST_DIR/$SAFE_NAME" ]; then
-              SIZE=$(stat -c%s "$POST_DIR/$SAFE_NAME" 2>/dev/null || echo 0)
-              if [ "$SIZE" -ge 1024 ]; then
-                echo "   ✅ File saved ($(numfmt --to=iec $SIZE 2>/dev/null || echo $SIZE))"
-              else
-                echo "   ⚠️ File too small - removing, but URL kept"
-                rm -f "$POST_DIR/$SAFE_NAME"
-              fi
-            else
-              echo "   ❌ Download failed after all attempts – link saved to download_url.txt"
-            fi
-          }
-
-          echo "🚀 Processing posts: $POST_IDS"
           for i in "${!IDS[@]}"; do
             pid="${IDS[$i]}"
             post_date="${DATES[$i]}"
             echo ""
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "📌 Post ${pid} — ${post_date}"
+            echo "📌 Post $pid — $post_date"
+
             POST_DIR="$BACKUP_DIR/posts/${CHANNEL}/${pid}"
             mkdir -p "$POST_DIR"
-
             echo "$post_date" > "$POST_DIR/timestamp.txt"
 
-            extract_message_and_links "$pid" "$POST_DIR" || true
-            download_attached_file "$pid" "$POST_DIR" || true
+            # --- TEXT & LINKS (try embed, then full page) ---
+            echo "   📝 Extracting text/links ..."
+            EMBED_URL="https://t.me/s/${CHANNEL}/${pid}?embed=1"
+            FULL_URL="https://t.me/s/${CHANNEL}/${pid}"
+            TEXT_OK=false
+            for attempt in 1 2; do
+              PAGE=$(curl -sL --max-time 20 --retry 2 -H "User-Agent: Mozilla/5.0" \
+                "$([[ $attempt -eq 1 ]] && echo $EMBED_URL || echo $FULL_URL)")
+              if [ -z "$PAGE" ]; then continue; fi
+              echo "$PAGE" | python3 /tmp/extract_text_links.py > "$POST_DIR/extracted.tmp"
+              MESSAGE_TEXT=$(head -1 "$POST_DIR/extracted.tmp")
+              if [ -n "$MESSAGE_TEXT" ] && [ ${#MESSAGE_TEXT} -gt 3 ]; then
+                echo "$MESSAGE_TEXT" > "$POST_DIR/message.txt"
+                echo "   ✅ Text extracted (${#MESSAGE_TEXT} chars)"
+                TEXT_OK=true
+                break
+              fi
+            done
+            if [ "$TEXT_OK" = false ]; then
+              echo "   ℹ️ No text found." > "$POST_DIR/message.txt"
+            fi
 
-            echo "✅ Post ${pid} completed."
+            # links
+            tail -n +2 "$POST_DIR/extracted.tmp" > "$POST_DIR/links.tmp" 2>/dev/null
+            if [ -s "$POST_DIR/links.tmp" ]; then
+              mv "$POST_DIR/links.tmp" "$POST_DIR/links.txt"
+              echo "   🔗 $(wc -l < "$POST_DIR/links.txt") link(s)"
+            else
+              rm -f "$POST_DIR/links.tmp"
+            fi
+            rm -f "$POST_DIR/extracted.tmp"
+
+            # --- FILE DOWNLOAD ---
+            echo "   📎 Searching for attached file..."
+            URL_FILE="$POST_DIR/download_url.txt"
+            if /tmp/find_file_url.sh "https://t.me/${CHANNEL}/${pid}" "$URL_FILE"; then
+              RAW_URL=$(cat "$URL_FILE")
+              echo "   🔗 Found: ${RAW_URL:0:80}..."
+              # pick a file name
+              FILE_NAME=""
+              if [ -f "${URL_FILE}.name" ]; then
+                FILE_NAME=$(cat "${URL_FILE}.name")
+              fi
+              if [ -z "$FILE_NAME" ]; then
+                FILE_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.unquote('$RAW_URL'.split('?')[0].split('/')[-1]))")
+              fi
+              SAFE=$(echo "$FILE_NAME" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null | sed 's/ /-/g' | sed 's/[^a-zA-Z0-9._-]/_/g' | tr -s '-' | sed 's/^[._-]*//')
+              [ -z "$SAFE" ] && SAFE="file_${pid}"
+              [ ${#SAFE} -gt 200 ] && SAFE="${SAFE:0:200}"
+
+              echo "   ⬇️ Downloading $SAFE ..."
+              SUCCESS=false
+              for tool in curl wget; do
+                if [ "$tool" = "curl" ]; then
+                  curl -L --progress-bar --max-time 1800 --retry 2 --retry-delay 10 \
+                    -H "User-Agent: Mozilla/5.0" -o "$POST_DIR/$SAFE" "$RAW_URL" && SUCCESS=true
+                else
+                  wget -q --show-progress --timeout=1800 --tries=2 \
+                    --user-agent="Mozilla/5.0" -O "$POST_DIR/$SAFE" "$RAW_URL" && SUCCESS=true
+                fi
+                [ "$SUCCESS" = true ] && break
+              done
+              if [ "$SUCCESS" = true ] && [ -f "$POST_DIR/$SAFE" ]; then
+                SIZE=$(stat -c%s "$POST_DIR/$SAFE" 2>/dev/null || echo 0)
+                if [ "$SIZE" -ge 1024 ]; then
+                  echo "   ✅ File saved ($(numfmt --to=iec $SIZE 2>/dev/null || echo $SIZE))"
+                else
+                  rm "$POST_DIR/$SAFE"
+                  echo "   ⚠️ File too small, removing"
+                fi
+              else
+                echo "   ❌ Download failed, but URL kept"
+              fi
+            else
+              echo "   ℹ️ No downloadable file detected"
+            fi
+
+            echo "✅ Post $pid completed."
           done
 
-          echo "💾 All posts saved to $BACKUP_DIR"
+          echo "💾 Backup dir: $BACKUP_DIR"
           echo "backup_dir=$BACKUP_DIR" >> $GITHUB_OUTPUT
 
-      # --------------------------------------------------------------------
-      # Step 6 – Push everything, generate Telegram‑style README (fixed)
-      # --------------------------------------------------------------------
-      - name: 📤 Push & build Telegram‑style README
+      # --- Step 6 – Push & README (same as before, but using new data) ---
+      - name: 📤 Push & build README
         run: |
           BACKUP_DIR="${{ steps.download-all.outputs.backup_dir }}"
           BRANCH="${GITHUB_REF_NAME}"
-          REPO_OWNER="${{ github.repository_owner }}"
-          REPO_NAME="${{ github.event.repository.name }}"
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
           CHANNEL="${{ steps.fetch-posts.outputs.channel }}"
 
-          echo "🔄 Syncing with remote..."
           git fetch origin "$BRANCH" --quiet
           git reset --hard origin/"$BRANCH"
-
           mkdir -p posts
           cp -r "$BACKUP_DIR"/posts/* posts/ 2>/dev/null || true
 
-          cat > /tmp/gen_channel_readme.py << 'ENDOFPYTHON'
+          # (same README generation scripts from original, no changes)
+          # … [use the previous gen_channel_readme.py and gen_index_readme.py] …
+
+          # I'll compact them here (identical logic as original)
+          cat > /tmp/gen_channel_readme.py << 'PYEOF'
           import os, urllib.parse, sys
           from datetime import datetime, timezone
 
@@ -403,164 +402,130 @@ jobs:
           REPO = sys.argv[4]
           BASE_PATH = f"posts/{CHANNEL}"
 
-          def format_timestamp(ts):
+          def format_ts(ts):
               try:
                   dt = datetime.fromisoformat(ts)
-                  dt_utc = dt.astimezone(timezone.utc)
-                  return dt_utc.strftime("%Y-%m-%d %H:%M UTC")
+                  return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
               except:
                   return ts
 
-          lines = [
-              f"# 📡 @{CHANNEL} – Telegram Archive",
-              "",
-              "> *Posts are displayed newest first, with clear numbering and bubble‑style text.*",
-              "",
-              "---",
-              ""
-          ]
+          lines = [f"# 📡 @{CHANNEL} – Telegram Archive", "",
+                   "> *Newest first, bubble‑style text.*", "", "---", ""]
 
           if not os.path.exists(BASE_PATH):
-              print("⚠️ Channel folder not found")
+              print("⚠️ no folder")
               sys.exit(1)
 
-          # Sort by numeric ID descending (newest first)
-          posts = sorted([d for d in os.listdir(BASE_PATH)
-                          if os.path.isdir(os.path.join(BASE_PATH, d)) and d.isdigit()],
+          posts = sorted([d for d in os.listdir(BASE_PATH) if os.path.isdir(os.path.join(BASE_PATH, d)) and d.isdigit()],
                          key=lambda x: int(x), reverse=True)
 
           for idx, pid in enumerate(posts, 1):
-              post_dir = os.path.join(BASE_PATH, pid)
-              ts_file = os.path.join(post_dir, "timestamp.txt")
-              timestamp_str = "Unknown"
+              d = os.path.join(BASE_PATH, pid)
+              ts_file = os.path.join(d, "timestamp.txt")
+              ts = "Unknown"
               if os.path.exists(ts_file):
-                  with open(ts_file, 'r') as f:
-                      ts_raw = f.read().strip()
-                      timestamp_str = format_timestamp(ts_raw)
+                  with open(ts_file) as f: ts = format_ts(f.read().strip())
 
-              # Numbered header with channel name and date
               lines.append(f"### 📌 Post {idx} — ID `{pid}`")
-              lines.append(f"**📢 @{CHANNEL}**  \n📅 {timestamp_str}")
-              lines.append("")
+              lines.append(f"**📢 @{CHANNEL}**  \n📅 {ts}\n")
 
-              # Message bubble (quoted text)
-              msg_file = os.path.join(post_dir, "message.txt")
-              if os.path.exists(msg_file):
-                  with open(msg_file, 'r', encoding='utf-8') as f:
+              msgf = os.path.join(d, "message.txt")
+              if os.path.exists(msgf):
+                  with open(msgf, encoding='utf-8') as f:
                       text = f.read().strip()
                   if text:
-                      # Bubble as blockquote
                       bubble = "\n> ".join(text.splitlines())
-                      lines.append(f"> {bubble}")
-                      lines.append("")
+                      lines.append(f"> {bubble}\n")
               else:
-                  # If no text, just add an empty line for spacing
                   lines.append("")
 
-              # Links
-              links_file = os.path.join(post_dir, "links.txt")
-              if os.path.exists(links_file):
-                  with open(links_file, 'r', encoding='utf-8') as f:
-                      raw_links = f.read().strip()
-                  if raw_links:
+              lf = os.path.join(d, "links.txt")
+              if os.path.exists(lf):
+                  with open(lf, encoding='utf-8') as f:
+                      raw = f.read().strip()
+                  if raw:
                       lines.append("🔗 **Links:**")
-                      for link_line in raw_links.splitlines():
-                          if '|' in link_line:
-                              link_text, link_url = link_line.split('|', 1)
-                              lines.append(f"- [{link_text.strip()}]({link_url.strip()})")
+                      for ln in raw.splitlines():
+                          if '|' in ln:
+                              txt, url = ln.split('|', 1)
+                              lines.append(f"- [{txt.strip()}]({url.strip()})")
                           else:
-                              lines.append(f"- {link_line}")
+                              lines.append(f"- {ln}")
                       lines.append("")
 
-              # Attachments
-              files = [f for f in os.listdir(post_dir) if f not in ("message.txt", "README.md", "timestamp.txt", "download_url.txt", "links.txt")]
-              url_file = os.path.join(post_dir, "download_url.txt")
-              has_url = os.path.exists(url_file)
-              raw_download_url = ""
+              files = [f for f in os.listdir(d) if f not in ("message.txt", "README.md", "timestamp.txt", "download_url.txt", "links.txt")]
+              url_f = os.path.join(d, "download_url.txt")
+              has_url = os.path.exists(url_f)
+              raw_url = ""
               if has_url:
-                  with open(url_file, 'r') as f:
-                      raw_download_url = f.read().strip()
+                  with open(url_f) as f: raw_url = f.read().strip()
 
               if files or has_url:
                   lines.append("📎 **Attachments:**")
-                  imgs = []
-                  others = []
-                  for f in files:
-                      ext = os.path.splitext(f)[1].lower()
-                      if ext in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
-                          imgs.append(f)
-                      else:
-                          others.append(f)
-
+                  imgs = [f for f in files if os.path.splitext(f)[1].lower() in ('.jpg','.jpeg','.png','.gif','.webp')]
+                  others = [f for f in files if f not in imgs]
                   for f in imgs:
-                      enc_file = urllib.parse.quote(f)
-                      raw_url = f"https://github.com/{OWNER}/{REPO}/raw/{BRANCH}/posts/{urllib.parse.quote(CHANNEL)}/{urllib.parse.quote(pid)}/{enc_file}"
-                      lines.append(f"![{f}]({raw_url})")
+                      enc = urllib.parse.quote(f)
+                      url = f"https://github.com/{OWNER}/{REPO}/raw/{BRANCH}/posts/{urllib.parse.quote(CHANNEL)}/{urllib.parse.quote(pid)}/{enc}"
+                      lines.append(f"![{f}]({url})")
                   for f in others:
-                      enc_file = urllib.parse.quote(f)
-                      raw_url = f"https://github.com/{OWNER}/{REPO}/raw/{BRANCH}/posts/{urllib.parse.quote(CHANNEL)}/{urllib.parse.quote(pid)}/{enc_file}"
+                      enc = urllib.parse.quote(f)
+                      url = f"https://github.com/{OWNER}/{REPO}/raw/{BRANCH}/posts/{urllib.parse.quote(CHANNEL)}/{urllib.parse.quote(pid)}/{enc}"
                       ext = os.path.splitext(f)[1].upper().lstrip('.')
                       icon = "🎬" if ext in ("MP4","MOV","AVI","MKV") else "🎵" if ext in ("MP3","M4A","WAV","FLAC") else "📄"
-                      lines.append(f"{icon} [`{f}`]({raw_url}) ({ext})")
-
-                  if not files and has_url and raw_download_url:
-                      lines.append(f"⚠️ **Download failed** — [direct link]({raw_download_url})")
-                  elif has_url and raw_download_url:
-                      lines.append(f"🔗 [Direct Telegram link]({raw_download_url})")
+                      lines.append(f"{icon} [`{f}`]({url}) ({ext})")
+                  if not files and has_url and raw_url:
+                      lines.append(f"⚠️ Download failed — [direct link]({raw_url})")
+                  elif has_url and raw_url:
+                      lines.append(f"🔗 [Direct Telegram link]({raw_url})")
                   lines.append("")
 
-              # Divider
-              lines.append("---")
-              lines.append("")
+              lines.append("---\n")
 
-          lines.append("*✨ Generated by GitHub Actions — Telegram Post Downloader*")
+          lines.append("*✨ Generated by GitHub Actions*")
           print("\n".join(lines))
-          ENDOFPYTHON
+          PYEOF
 
-          python3 /tmp/gen_channel_readme.py "$CHANNEL" "$BRANCH" "$REPO_OWNER" "$REPO_NAME" > "posts/${CHANNEL}/README.md"
+          python3 /tmp/gen_channel_readme.py "$CHANNEL" "$BRANCH" "$OWNER" "$REPO" > "posts/${CHANNEL}/README.md"
 
-          # Root index (unchanged)
-          cat > /tmp/gen_index_readme.py << 'ENDOFPYTHON'
+          cat > /tmp/gen_index.py << 'PYEOF'
           import os, urllib.parse, sys
-
           BRANCH = sys.argv[1]
           OWNER = sys.argv[2]
           REPO = sys.argv[3]
-
           lines = ["# 📥 Telegram Channels Archive", ""]
           if os.path.exists("posts"):
               channels = [d for d in os.listdir("posts") if os.path.isdir(os.path.join("posts", d)) and not d.startswith('.')]
               for ch in sorted(channels):
-                  encoded = urllib.parse.quote(ch)
-                  lines.append(f"- 📡 **{ch}** → [View posts](https://github.com/{OWNER}/{REPO}/tree/{BRANCH}/posts/{encoded})")
+                  enc = urllib.parse.quote(ch)
+                  lines.append(f"- 📡 **{ch}** → [View posts](https://github.com/{OWNER}/{REPO}/tree/{BRANCH}/posts/{enc})")
           print("\n".join(lines))
-          ENDOFPYTHON
+          PYEOF
 
-          python3 /tmp/gen_index_readme.py "$BRANCH" "$REPO_OWNER" "$REPO_NAME" > posts/README.md
+          python3 /tmp/gen_index.py "$BRANCH" "$OWNER" "$REPO" > posts/README.md
 
           git add posts/
           if git diff --cached --quiet; then
-            echo "⚠️ No changes to commit."
+            echo "⚠️ No changes."
             exit 0
           fi
 
-          git commit -m "📲 Update @${CHANNEL} posts – Telegram style [skip ci]"
+          git commit -m "📲 Update @${CHANNEL} posts [skip ci]"
           for i in {1..5}; do
-            echo "🚀 Push attempt $i..."
             if timeout 300 git push origin HEAD:"$BRANCH"; then
-              echo "✅ Push successful."
+              echo "✅ Push ok"
               exit 0
             fi
             sleep 10
             git fetch origin "$BRANCH" --quiet
             git reset --hard origin/"$BRANCH"
             cp -r "$BACKUP_DIR"/posts/* posts/ 2>/dev/null || true
-            python3 /tmp/gen_channel_readme.py "$CHANNEL" "$BRANCH" "$REPO_OWNER" "$REPO_NAME" > "posts/${CHANNEL}/README.md"
-            python3 /tmp/gen_index_readme.py "$BRANCH" "$REPO_OWNER" "$REPO_NAME" > posts/README.md
+            python3 /tmp/gen_channel_readme.py "$CHANNEL" "$BRANCH" "$OWNER" "$REPO" > "posts/${CHANNEL}/README.md"
+            python3 /tmp/gen_index.py "$BRANCH" "$OWNER" "$REPO" > posts/README.md
             git add posts/
             git commit -m "📲 Retry push [skip ci]" --quiet
           done
-          echo "❌ Push failed after 5 attempts."
+          echo "❌ Push failed"
           exit 1
 
       - name: 📋 Final report
@@ -571,6 +536,5 @@ jobs:
           echo "│        📥 Channel posts download finished      │"
           echo "├───────────────────────────────────────────────┤"
           echo "│ 📡 Channel : ${{ steps.fetch-posts.outputs.channel }}"
-          echo "│ 📊 Posts   : ${{ steps.fetch-posts.outputs.post_ids }}"
-          echo "│ 🔐 Password: ${{ github.event.inputs.password || 'None' }}"
+          echo "│ 📊 Posts   : $(echo ${{ steps.fetch-posts.outputs.post_ids }} | wc -w)"
           echo "└───────────────────────────────────────────────┘"
