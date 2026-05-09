@@ -1,4 +1,4 @@
-name: 02- 📥 Channel Posts (Robust – multi‑page + fallback API)
+name: 02- 📥 Channel Posts (Smart Pagination – No API)
 
 on:
   workflow_dispatch:
@@ -48,8 +48,10 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y curl jq p7zip-full python3 wget
 
-      # --- Step 4 (new) – Multi‑page ID collection ---------------------------------
-      - name: 🔍 Collect all required post IDs (multi‑page)
+      # --------------------------------------------------------------------
+      # Step 4 – Collect enough post IDs by scrolling pages
+      # --------------------------------------------------------------------
+      - name: 🔍 Collect post IDs (multi‑page)
         id: fetch-posts
         run: |
           CHANNEL="${{ github.event.inputs.channel }}"
@@ -58,18 +60,16 @@ jobs:
           echo "📡 Channel: $CHANNEL  |  Target: $COUNT posts"
 
           cat > /tmp/paginate.py << 'PYEOF'
-          import sys, re, urllib.request, urllib.error, time, json
+          import sys, re, urllib.request, urllib.error
 
-          channel = sys.argv[1]
+          channel = sys.argv[1].lower()
           needed = int(sys.argv[2])
           base = f"https://t.me/s/{channel}"
           headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"}
 
-          ids_dates = []   # (id, datetime)
+          ids_dates = []   # list of (pid_int, datetime_str)
           seen = set()
           page_url = base
-          stop_after_empty = 3
-          empty_count = 0
 
           while len(ids_dates) < needed:
               req = urllib.request.Request(page_url, headers=headers)
@@ -82,71 +82,61 @@ jobs:
                       sys.exit(1)
                   break
 
-              # extract blocks
-              matches = re.findall(r'data-post="([^/]+)/(\d+)"', page)
-              if not matches:
-                  empty_count += 1
-                  if empty_count >= stop_after_empty:
-                      break
-              else:
-                  empty_count = 0
+              page_matches = re.findall(r'data-post="([^/]+)/(\d+)"', page)
+              if not page_matches:
+                  # No posts on this page – stop
+                  break
 
               page_ids = []
-              for ch, pid in matches:
-                  if ch.lower() == channel.lower() and pid.isdigit():
+              for ch, pid in page_matches:
+                  if ch.lower() == channel and pid.isdigit():
                       pid_int = int(pid)
                       if pid_int not in seen:
                           seen.add(pid_int)
-                          # look for <time datetime="...">
-                          time_match = re.search(
-                              r'<time[^>]*datetime="([^"]+)"',
-                              page[page.index(f'data-post="{ch}/{pid}"'):]
-                          )
+                          # extract timestamp
+                          rest = page[page.index(f'data-post="{ch}/{pid}"'):]
+                          time_match = re.search(r'<time[^>]*datetime="([^"]+)"', rest)
                           dt = time_match.group(1) if time_match else "Unknown"
                           page_ids.append((pid_int, dt))
 
-              # sort descending within this page
+              # sort newest first
               page_ids.sort(key=lambda x: x[0], reverse=True)
               ids_dates.extend(page_ids)
               ids_dates.sort(key=lambda x: x[0], reverse=True)
-              # keep best N
-              ids_dates = ids_dates[:needed]
+              ids_dates = ids_dates[:needed]  # keep only needed best
 
               if len(ids_dates) >= needed:
                   break
 
-              # find 'before' parameter: oldest id on this page
+              # next page: oldest ID on this page minus 1 (or use ?before=)
               oldest = min(page_ids, key=lambda x: x[0])[0] if page_ids else None
               if oldest:
                   page_url = f"{base}?before={oldest}"
               else:
                   break
 
-          # output
+          # Output one line per post: id|date
           for pid, dt in ids_dates:
               print(f"{pid}|{dt}")
           PYEOF
 
-          python3 /tmp/paginate.py "$CHANNEL" "$COUNT" > /tmp/posts_ids.txt
-          if [ ! -s /tmp/posts_ids.txt ]; then
-            echo "❌ No posts found."
+          python3 /tmp/paginate.py "$CHANNEL" "$COUNT" > /tmp/posts_list.txt
+          if [ ! -s /tmp/posts_list.txt ]; then
+            echo "❌ No posts found"
             exit 1
           fi
 
-          POST_IDS=""
-          POST_DATES=""
-          while IFS='|' read -r pid dt; do
-            POST_IDS="$POST_IDS $pid"
-            POST_DATES="$POST_DATES $dt"
-          done < /tmp/posts_ids.txt
-
-          echo "✅ Found $(echo $POST_IDS | wc -w) posts"
+          POST_IDS=$(cat /tmp/posts_list.txt | cut -d'|' -f1 | tr '\n' ' ')
+          POST_DATES=$(cat /tmp/posts_list.txt | cut -d'|' -f2 | tr '\n' ' ')
+          echo "✅ Collected $(echo $POST_IDS | wc -w) posts"
           echo "post_ids=$POST_IDS" >> $GITHUB_OUTPUT
           echo "post_dates=$POST_DATES" >> $GITHUB_OUTPUT
           echo "channel=$CHANNEL" >> $GITHUB_OUTPUT
 
-      # --- Step 5 (improved) – Extract text / links / files ------------------------
-      - name: ⬇️ Extract text, links, download files
+      # --------------------------------------------------------------------
+      # Step 5 – Extract text, links, download files for each post
+      # --------------------------------------------------------------------
+      - name: ⬇️ Process each post (text + files)
         id: download-all
         run: |
           CHANNEL="${{ steps.fetch-posts.outputs.channel }}"
@@ -155,7 +145,7 @@ jobs:
           BACKUP_DIR="/tmp/tg_backup_$$"
           mkdir -p "$BACKUP_DIR/posts"
 
-          # Helper: extract text & links from any HTML page
+          # Helper Python scripts (same as before, but included inline)
           cat > /tmp/extract_text_links.py << 'PYEOF'
           import sys, re, html
           from html.parser import HTMLParser
@@ -187,27 +177,22 @@ jobs:
           text = ""
           links = []
 
-          # try main message div
           div_match = re.search(r'<div\s+class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', page, re.DOTALL)
           if div_match:
               inner = div_match.group(1)
-              # remove tags for plain text
-              plain = html.unescape(re.sub(r'<[^>]+>', ' ', inner)).strip()
-              text = re.sub(r'\s+', ' ', plain)
+              plain = html.unescape(re.sub(r'<[^>]+>', ' ', inner))
+              text = re.sub(r'\s+', ' ', plain).strip()
               parser = LinkExtractor()
               parser.feed('<div>' + inner + '</div>')
               links = parser.links
-
-          # fallback: og:description
-          if not text:
-              meta = re.search(r'<meta\s+property="og:description"\s+content="([^"]+)"', page)
-              if meta:
-                  raw = meta.group(1)
+          else:
+              meta_match = re.search(r'<meta\s+property="og:description"\s+content="([^"]+)"', page)
+              if meta_match:
+                  raw = meta_match.group(1)
                   if '...' in raw:
                       raw = raw.split('...', 1)[1]
                   text = raw.strip()
 
-          # if still no links, grab any external URLs from page
           if not links:
               raw_urls = re.findall(r'(https?://[^\s<>"]+)', page)
               for u in raw_urls:
@@ -215,21 +200,19 @@ jobs:
                       links.append((u, u))
 
           print(text)
-          for link_text, link_url in links:
-              # clean up
-              link_text = re.sub(r'<[^>]+>', '', link_text).strip()
-              if link_text and link_url:
-                  print(f"{link_text}|{link_url}")
+          for lt, lu in links:
+              lt = re.sub(r'<[^>]+>', '', lt).strip()
+              if lt and lu:
+                  print(f"{lt}|{lu}")
           PYEOF
 
-          # Helper: resolve download URL from post link (updated regex, more patterns)
           cat > /tmp/find_file_url.sh << 'BASH'
           #!/bin/bash
           POST_LINK="$1"
           OUTPUT_FILE="$2"
+          EMBED_URL="${POST_LINK/s\//\/}?embed=1"
 
-          # method 1: og meta tags from embed page
-          EMBED_URL="${POST_LINK/s\//\/}?embed=1"   # t.me/s/... -> t.me/s/?embed=1
+          # Method 1: og meta
           PAGE=$(curl -sL --max-time 20 -H "User-Agent: Mozilla/5.0" "$EMBED_URL")
           for meta in "og:image" "og:video" "og:video:url" "og:video:secure_url"; do
             URL=$(echo "$PAGE" | grep -oP '(?<=<meta\s+property="'"$meta"'"\s+content=")[^"]+' | head -1)
@@ -239,36 +222,22 @@ jobs:
             fi
           done
 
-          # method 2: direct scrape post link for CDN urls
-          PAGE=$(curl -sL --max-time 20 -H "User-Agent: TelegramBot (like TwitterBot)" "$POST_LINK")
-          # various CDN patterns
-          CDN_URL=$(echo "$PAGE" | grep -oP 'https?://cdn[0-9a-zA-Z-]*\.(telesco\.pe|telegram\.org|telegram-cdn\.org|cdn-telegram\.org)/file/[^"'"'"'?\s]+' | head -1)
-          if [ -z "$CDN_URL" ]; then
-            # also try src tags
-            CDN_URL=$(echo "$PAGE" | grep -oP 'src="(https?://cdn[^"]+\.(mp4|mov|avi|mkv|pdf|zip|rar|7z|jpg|jpeg|png|gif|mp3|m4a|wav|flac|doc|docx|xls|xlsx|ppt|pptx|txt|apk|torrent))"' | head -1 | cut -d'"' -f2)
-          fi
-          if [ -n "$CDN_URL" ]; then
-            echo "$CDN_URL" > "$OUTPUT_FILE"
+          # Method 2: Direct CDN regex
+          PAGE2=$(curl -sL --max-time 20 -H "User-Agent: TelegramBot (like TwitterBot)" "$POST_LINK")
+          CDN=$(echo "$PAGE2" | grep -oP 'https?://cdn[0-9a-zA-Z-]*\.(telesco\.pe|telegram\.org|telegram-cdn\.org|cdn-telegram\.org)/file/[^"'"'"'?\s]+' | head -1)
+          if [ -n "$CDN" ]; then
+            echo "$CDN" > "$OUTPUT_FILE"
             return 0
           fi
 
-          # method 3: third-party APIs (only if nothing found)
-          ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$POST_LINK'))")
-          RESP=$(curl -s --max-time 30 -X POST -d "telegram_link=$ENCODED" -H "User-Agent: Mozilla/5.0" https://telegramdownloader.net/proxy.php)
-          URL=$(echo "$RESP" | jq -r '.data.data.link // empty' 2>/dev/null)
-          if [ -n "$URL" ] && [ "$URL" != "null" ]; then
-            FILE=$(echo "$RESP" | jq -r '.data.data.file_name // empty' 2>/dev/null)
-            echo "$URL" > "$OUTPUT_FILE"
-            [ -n "$FILE" ] && echo "$FILE" > "${OUTPUT_FILE}.name"
-            return 0
-          fi
-
-          RESP2=$(curl -s --max-time 30 -X POST -H "Content-Type: application/json" -d "{\"url\":\"$POST_LINK\"}" https://api.tgsave.com/download)
-          URL2=$(echo "$RESP2" | jq -r '.url // .link // .download_url // empty' 2>/dev/null)
-          if [ -n "$URL2" ] && [ "$URL2" != "null" ]; then
-            FILE2=$(echo "$RESP2" | jq -r '.filename // .file_name // .name // empty' 2>/dev/null)
-            echo "$URL2" > "$OUTPUT_FILE"
-            [ -n "$FILE2" ] && echo "$FILE2" > "${OUTPUT_FILE}.name"
+          # Method 3: third-party APIs (telegramdownloader)
+          ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$POST_LINK'))")
+          RESP=$(curl -s --max-time 30 -X POST -d "telegram_link=$ENC" -H "User-Agent: Mozilla/5.0" https://telegramdownloader.net/proxy.php)
+          URL3=$(echo "$RESP" | jq -r '.data.data.link // empty' 2>/dev/null)
+          if [ -n "$URL3" ] && [ "$URL3" != "null" ]; then
+            echo "$URL3" > "$OUTPUT_FILE"
+            FN=$(echo "$RESP" | jq -r '.data.data.file_name // empty' 2>/dev/null)
+            [ -n "$FN" ] && echo "$FN" > "${OUTPUT_FILE}.name"
             return 0
           fi
 
@@ -276,7 +245,6 @@ jobs:
           BASH
           chmod +x /tmp/find_file_url.sh
 
-          # Main processing loop
           IFS=' ' read -ra IDS <<< "$POST_IDS"
           IFS=' ' read -ra DATES <<< "$POST_DATES"
 
@@ -286,20 +254,18 @@ jobs:
             echo ""
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "📌 Post $pid — $post_date"
-
             POST_DIR="$BACKUP_DIR/posts/${CHANNEL}/${pid}"
             mkdir -p "$POST_DIR"
             echo "$post_date" > "$POST_DIR/timestamp.txt"
 
-            # --- TEXT & LINKS (try embed, then full page) ---
-            echo "   📝 Extracting text/links ..."
+            # --- TEXT & LINKS ---
             EMBED_URL="https://t.me/s/${CHANNEL}/${pid}?embed=1"
             FULL_URL="https://t.me/s/${CHANNEL}/${pid}"
             TEXT_OK=false
             for attempt in 1 2; do
               PAGE=$(curl -sL --max-time 20 --retry 2 -H "User-Agent: Mozilla/5.0" \
                 "$([[ $attempt -eq 1 ]] && echo $EMBED_URL || echo $FULL_URL)")
-              if [ -z "$PAGE" ]; then continue; fi
+              [ -z "$PAGE" ] && continue
               echo "$PAGE" | python3 /tmp/extract_text_links.py > "$POST_DIR/extracted.tmp"
               MESSAGE_TEXT=$(head -1 "$POST_DIR/extracted.tmp")
               if [ -n "$MESSAGE_TEXT" ] && [ ${#MESSAGE_TEXT} -gt 3 ]; then
@@ -309,11 +275,8 @@ jobs:
                 break
               fi
             done
-            if [ "$TEXT_OK" = false ]; then
-              echo "   ℹ️ No text found." > "$POST_DIR/message.txt"
-            fi
+            [ "$TEXT_OK" = false ] && echo "ℹ️ No text found." > "$POST_DIR/message.txt"
 
-            # links
             tail -n +2 "$POST_DIR/extracted.tmp" > "$POST_DIR/links.tmp" 2>/dev/null
             if [ -s "$POST_DIR/links.tmp" ]; then
               mv "$POST_DIR/links.tmp" "$POST_DIR/links.txt"
@@ -324,19 +287,13 @@ jobs:
             rm -f "$POST_DIR/extracted.tmp"
 
             # --- FILE DOWNLOAD ---
-            echo "   📎 Searching for attached file..."
             URL_FILE="$POST_DIR/download_url.txt"
             if /tmp/find_file_url.sh "https://t.me/${CHANNEL}/${pid}" "$URL_FILE"; then
               RAW_URL=$(cat "$URL_FILE")
               echo "   🔗 Found: ${RAW_URL:0:80}..."
-              # pick a file name
               FILE_NAME=""
-              if [ -f "${URL_FILE}.name" ]; then
-                FILE_NAME=$(cat "${URL_FILE}.name")
-              fi
-              if [ -z "$FILE_NAME" ]; then
-                FILE_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.unquote('$RAW_URL'.split('?')[0].split('/')[-1]))")
-              fi
+              [ -f "${URL_FILE}.name" ] && FILE_NAME=$(cat "${URL_FILE}.name")
+              [ -z "$FILE_NAME" ] && FILE_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.unquote('$RAW_URL'.split('?')[0].split('/')[-1]))")
               SAFE=$(echo "$FILE_NAME" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null | sed 's/ /-/g' | sed 's/[^a-zA-Z0-9._-]/_/g' | tr -s '-' | sed 's/^[._-]*//')
               [ -z "$SAFE" ] && SAFE="file_${pid}"
               [ ${#SAFE} -gt 200 ] && SAFE="${SAFE:0:200}"
@@ -359,23 +316,24 @@ jobs:
                   echo "   ✅ File saved ($(numfmt --to=iec $SIZE 2>/dev/null || echo $SIZE))"
                 else
                   rm "$POST_DIR/$SAFE"
-                  echo "   ⚠️ File too small, removing"
+                  echo "   ⚠️ File too small, removed"
                 fi
               else
-                echo "   ❌ Download failed, but URL kept"
+                echo "   ❌ Download failed – URL kept"
               fi
             else
               echo "   ℹ️ No downloadable file detected"
             fi
-
             echo "✅ Post $pid completed."
           done
 
           echo "💾 Backup dir: $BACKUP_DIR"
           echo "backup_dir=$BACKUP_DIR" >> $GITHUB_OUTPUT
 
-      # --- Step 6 – Push & README (same as before, but using new data) ---
-      - name: 📤 Push & build README
+      # --------------------------------------------------------------------
+      # Step 6 – Push & build README (unchanged style)
+      # --------------------------------------------------------------------
+      - name: 📤 Push & build Telegram‑style README
         run: |
           BACKUP_DIR="${{ steps.download-all.outputs.backup_dir }}"
           BRANCH="${GITHUB_REF_NAME}"
@@ -388,10 +346,7 @@ jobs:
           mkdir -p posts
           cp -r "$BACKUP_DIR"/posts/* posts/ 2>/dev/null || true
 
-          # (same README generation scripts from original, no changes)
-          # … [use the previous gen_channel_readme.py and gen_index_readme.py] …
-
-          # I'll compact them here (identical logic as original)
+          # Generate README for this channel (same as original)
           cat > /tmp/gen_channel_readme.py << 'PYEOF'
           import os, urllib.parse, sys
           from datetime import datetime, timezone
@@ -410,13 +365,15 @@ jobs:
                   return ts
 
           lines = [f"# 📡 @{CHANNEL} – Telegram Archive", "",
-                   "> *Newest first, bubble‑style text.*", "", "---", ""]
+                   "> *Posts are displayed newest first, with bubble‑style text.*", "", "---", ""]
 
           if not os.path.exists(BASE_PATH):
-              print("⚠️ no folder")
-              sys.exit(1)
+              lines.append("⚠️ No posts downloaded yet.")
+              print("\n".join(lines))
+              sys.exit(0)
 
-          posts = sorted([d for d in os.listdir(BASE_PATH) if os.path.isdir(os.path.join(BASE_PATH, d)) and d.isdigit()],
+          posts = sorted([d for d in os.listdir(BASE_PATH)
+                          if os.path.isdir(os.path.join(BASE_PATH, d)) and d.isdigit()],
                          key=lambda x: int(x), reverse=True)
 
           for idx, pid in enumerate(posts, 1):
@@ -488,6 +445,7 @@ jobs:
 
           python3 /tmp/gen_channel_readme.py "$CHANNEL" "$BRANCH" "$OWNER" "$REPO" > "posts/${CHANNEL}/README.md"
 
+          # Root README index
           cat > /tmp/gen_index.py << 'PYEOF'
           import os, urllib.parse, sys
           BRANCH = sys.argv[1]
@@ -506,14 +464,13 @@ jobs:
 
           git add posts/
           if git diff --cached --quiet; then
-            echo "⚠️ No changes."
+            echo "⚠️ No changes to commit."
             exit 0
           fi
-
           git commit -m "📲 Update @${CHANNEL} posts [skip ci]"
           for i in {1..5}; do
             if timeout 300 git push origin HEAD:"$BRANCH"; then
-              echo "✅ Push ok"
+              echo "✅ Push successful."
               exit 0
             fi
             sleep 10
@@ -525,13 +482,12 @@ jobs:
             git add posts/
             git commit -m "📲 Retry push [skip ci]" --quiet
           done
-          echo "❌ Push failed"
+          echo "❌ Push failed after 5 attempts."
           exit 1
 
       - name: 📋 Final report
         if: always()
         run: |
-          echo ""
           echo "┌───────────────────────────────────────────────┐"
           echo "│        📥 Channel posts download finished      │"
           echo "├───────────────────────────────────────────────┤"
