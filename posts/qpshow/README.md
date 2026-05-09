@@ -29,8 +29,9 @@
 - [لینک داخلی](https://guardnet.ir/f/5b170940fc04)
 
 📎 **Attachments:**
+![photo-2026-05-09_05-06-55.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14191/photo-2026-05-09_05-06-55.jpg)
 ![photo-2026-05-09_04-39-14.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14191/photo-2026-05-09_04-39-14.jpg)
-🔗 [Direct Telegram link](https://tg.telegramdownloader.net/148087/photo-2026-05-09_04-39-14.jpg?hash=38f0d4)
+🔗 [Direct Telegram link](https://tg.telegramdownloader.net/148120/photo-2026-05-09_05-06-55.jpg?hash=38f0d4)
 
 ---
 
@@ -61,8 +62,9 @@
 - [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
 
 📎 **Attachments:**
+![photo-2026-05-09_05-07-07.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14185/photo-2026-05-09_05-07-07.jpg)
 ![photo-2026-05-09_04-40-25.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14185/photo-2026-05-09_04-40-25.jpg)
-🔗 [Direct Telegram link](https://tg.telegramdownloader.net/148089/photo-2026-05-09_04-40-25.jpg?hash=e37d6c)
+🔗 [Direct Telegram link](https://tg.telegramdownloader.net/148121/photo-2026-05-09_05-07-07.jpg?hash=e37d6c)
 
 ---
 
@@ -77,8 +79,9 @@
 - [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
 
 📎 **Attachments:**
+🎬 [`IMG_3943.MP4`](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14184/IMG_3943.MP4) (MP4)
 📄 [`JCxzv-dxCGdX5y2KLkygPcaR3thHKChyFTW6iE64Hf-D3BkQXxQ3VlPp4EZlg-_urKergt8G9Uy892M0LbD7oKDhplRufNtdBqC0T3W2TEBHwX5WpUh4TBx_ziuGo9Bm_1FrMIN54qNFVQeyWPVVkCIxncPV8gphUErhef-DZpzvAEnRkqElDAnn4-kpnwhVsp0hB8cp`](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14184/JCxzv-dxCGdX5y2KLkygPcaR3thHKChyFTW6iE64Hf-D3BkQXxQ3VlPp4EZlg-_urKergt8G9Uy892M0LbD7oKDhplRufNtdBqC0T3W2TEBHwX5WpUh4TBx_ziuGo9Bm_1FrMIN54qNFVQeyWPVVkCIxncPV8gphUErhef-DZpzvAEnRkqElDAnn4-kpnwhVsp0hB8cp) ()
-🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/JCxzv-dxCGdX5y2KLkygPcaR3thHKChyFTW6iE64Hf-D3BkQXxQ3VlPp4EZlg-_urKergt8G9Uy892M0LbD7oKDhplRufNtdBqC0T3W2TEBHwX5WpUh4TBx_ziuGo9Bm_1FrMIN54qNFVQeyWPVVkCIxncPV8gphUErhef-DZpzvAEnRkqElDAnn4-kpnwhVsp0hB8cpBEuEijTmdRNqmXnhUE2JJxgoDGdEatav1gcVPYMrrRbEwx9ql6_i2qOe9FkZni_jqR9WCck83nQqJdZlIq3rgkByhXvxoB_lxdrcr40wl27ssfJH8fpeP3Vn4KDDEnZLAgixggJP8CaNXg)
+🔗 [Direct Telegram link](https://tg.telegramdownloader.net/148122/IMG_3943.MP4?hash=60c6e9)
 
 ---
 
@@ -158,6 +161,118 @@
 
 📎 **Attachments:**
 ![Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14179/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg)
+🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5SlLqCSeX7NZhVhYgQyWotmj-2cfWJPJgS-CcZNYSUXJ25L8ww_yCNGvTje2pRIfcvczD0Hwo19w6aHX1oX_hZdskm47deh5PrNg3iuoMNrTTzjgxPKAmRSohh0YKmUWRpQH3C1WXvzMUPYcmw9A.jpg)
+
+---
+
+### 📌 Post 11 — ID `14178`
+**📢 @qpshow**  
+📅 2026-05-07 22:15 UTC
+
+> کانالای تلگرامی هیچی نشده بنر تبلیغاتی شروع جنگ هم زدن:))))))
+
+🔗 **Links:**
+- [http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)
+- [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
+
+📎 **Attachments:**
+![Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14178/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg)
+🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5SlLqCSeX7NZhVhYgQyWotmj-2cfWJPJgS-CcZNYSUXJ25L8ww_yCNGvTje2pRIfcvczD0Hwo19w6aHX1oX_hZdskm47deh5PrNg3iuoMNrTTzjgxPKAmRSohh0YKmUWRpQH3C1WXvzMUPYcmw9A.jpg)
+
+---
+
+### 📌 Post 12 — ID `14177`
+**📢 @qpshow**  
+📅 2026-05-07 21:53 UTC
+
+> میگن امارات اتک زده انگار جالبه  اما هنوز خبر رسمیی نیست
+
+🔗 **Links:**
+- [http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)
+- [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
+
+📎 **Attachments:**
+![Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14177/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg)
+🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5SlLqCSeX7NZhVhYgQyWotmj-2cfWJPJgS-CcZNYSUXJ25L8ww_yCNGvTje2pRIfcvczD0Hwo19w6aHX1oX_hZdskm47deh5PrNg3iuoMNrTTzjgxPKAmRSohh0YKmUWRpQH3C1WXvzMUPYcmw9A.jpg)
+
+---
+
+### 📌 Post 13 — ID `14176`
+**📢 @qpshow**  
+📅 2026-05-07 21:53 UTC
+
+> 🚨  فوری/تسنیم: صدای انفجار دوباره در اسکله بهمن قشم
+
+🔗 **Links:**
+- [http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)
+- [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
+
+📎 **Attachments:**
+![Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14176/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg)
+🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5SlLqCSeX7NZhVhYgQyWotmj-2cfWJPJgS-CcZNYSUXJ25L8ww_yCNGvTje2pRIfcvczD0Hwo19w6aHX1oX_hZdskm47deh5PrNg3iuoMNrTTzjgxPKAmRSohh0YKmUWRpQH3C1WXvzMUPYcmw9A.jpg)
+
+---
+
+### 📌 Post 14 — ID `14175`
+**📢 @qpshow**  
+📅 2026-05-07 21:53 UTC
+
+> شنیده شدن صدای انفجار در اسکله مسافربری بهمن در جزیره قشم
+
+🔗 **Links:**
+- [http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)
+- [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
+
+📎 **Attachments:**
+📄 [`Gt7609LbkFqArqaeLqLgSxkh4qABqQNcJCXph4reOuLIaHodFqVCdlTTwvhZI5V_ZGbqMMUy4pSwQPD1NJNxg3Hb1h2kK9UUxt6c9pbwAA30jSPqj-RU80KVmRVDZGTLnCTybihFTl8pUDaIXII7rzNjN3eagu-IUgkp57Y7jzuuzuFuYdKrgwa6UFAjhbGSODA0aXGe`](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14175/Gt7609LbkFqArqaeLqLgSxkh4qABqQNcJCXph4reOuLIaHodFqVCdlTTwvhZI5V_ZGbqMMUy4pSwQPD1NJNxg3Hb1h2kK9UUxt6c9pbwAA30jSPqj-RU80KVmRVDZGTLnCTybihFTl8pUDaIXII7rzNjN3eagu-IUgkp57Y7jzuuzuFuYdKrgwa6UFAjhbGSODA0aXGe) ()
+🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/Gt7609LbkFqArqaeLqLgSxkh4qABqQNcJCXph4reOuLIaHodFqVCdlTTwvhZI5V_ZGbqMMUy4pSwQPD1NJNxg3Hb1h2kK9UUxt6c9pbwAA30jSPqj-RU80KVmRVDZGTLnCTybihFTl8pUDaIXII7rzNjN3eagu-IUgkp57Y7jzuuzuFuYdKrgwa6UFAjhbGSODA0aXGe1V9cLRw1Zh_GeJCIWc6XeYUmYNa-c5FRGeYTQjaOHVzQHyrwf9wXH3UKS6dNqmDuc4REZ6Xb9l5DBoDCg4KT4tEH1K8EqWSQnle_JlhGf9T7GrXfzLNnABLzfpZrl6y2s7dwfb534LlyNA)
+
+---
+
+### 📌 Post 15 — ID `14174`
+**📢 @qpshow**  
+📅 2026-05-07 21:21 UTC
+
+> شنیده شدن صدای چند انفجار در محدوده شهرستان سیریک بندرعباس
+
+🔗 **Links:**
+- [http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)
+- [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
+
+📎 **Attachments:**
+![Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14174/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg)
+🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5SlLqCSeX7NZhVhYgQyWotmj-2cfWJPJgS-CcZNYSUXJ25L8ww_yCNGvTje2pRIfcvczD0Hwo19w6aHX1oX_hZdskm47deh5PrNg3iuoMNrTTzjgxPKAmRSohh0YKmUWRpQH3C1WXvzMUPYcmw9A.jpg)
+
+---
+
+### 📌 Post 16 — ID `14173`
+**📢 @qpshow**  
+📅 2026-05-07 20:12 UTC
+
+> صدای انفجار در قشم
+
+🔗 **Links:**
+- [http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)
+- [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
+
+📎 **Attachments:**
+![Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14173/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg)
+🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5SlLqCSeX7NZhVhYgQyWotmj-2cfWJPJgS-CcZNYSUXJ25L8ww_yCNGvTje2pRIfcvczD0Hwo19w6aHX1oX_hZdskm47deh5PrNg3iuoMNrTTzjgxPKAmRSohh0YKmUWRpQH3C1WXvzMUPYcmw9A.jpg)
+
+---
+
+### 📌 Post 17 — ID `14172`
+**📢 @qpshow**  
+📅 2026-05-07 19:49 UTC
+
+> کاش ترامپ هم می‌زایید می‌رفت مرخصی یه مدت روبیو کاراشو می‌کرد
+
+🔗 **Links:**
+- [http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)
+- [https://guardnet.ir/f/5b170940fc04](https://guardnet.ir/f/5b170940fc04)
+
+📎 **Attachments:**
+![Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg](https://github.com/mamadconnect/Telegram-downloader/raw/main/posts/qpshow/14172/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5S.jpg)
 🔗 [Direct Telegram link](https://cdn4.telesco.pe/file/Nb7xVz1wPHsAxo-ABWb5rMTywGf-QZvnI9MFYx7djAiOmtlXdH3q3hvjKDp0gyMDQ4iiAuWBMq5ajdi0snwKLu32zcb9uK-GY7lww0UZFoyJliw6OCyI9eXV9f2Gcc8h1TvSx0HeTzOsKETS1FUB8pKSvLH9MndbPrdCwi3t49vkMd8_uc53CZkgBxj1NnfxWM5SlLqCSeX7NZhVhYgQyWotmj-2cfWJPJgS-CcZNYSUXJ25L8ww_yCNGvTje2pRIfcvczD0Hwo19w6aHX1oX_hZdskm47deh5PrNg3iuoMNrTTzjgxPKAmRSohh0YKmUWRpQH3C1WXvzMUPYcmw9A.jpg)
 
 ---
